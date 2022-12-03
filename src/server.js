@@ -91,14 +91,15 @@ app.get("/getPaymentStatus/:orderID/:api", async (req, res) => {
       );
 
       const currentZkAddr = currentTransactioninZKPayserver.zkAddress;
+
       const cloudTrxData = trxHistory.find((ele) => {
+        console.log(ele.to, currentZkAddr);
         if (ele.to == currentZkAddr) {
-          console.log(currentZkAddr);
         }
         return ele.to == currentZkAddr;
       });
       const coupon = cloudTrxData !== undefined ? cloudTrxData.txHash : "na";
-      console.log(cloudTrxData);
+      console.log(cloudTrxData + "asdf");
       if (cloudTrxData !== undefined) {
         if (currentTransactioninZKPayserver.success) {
           res.send({ status: "success", claimCupon: coupon });
@@ -113,17 +114,17 @@ app.get("/getPaymentStatus/:orderID/:api", async (req, res) => {
             Number(currentTransactioninZKPayserver.amount);
 
           console.log(updatedBalance);
-          await VendorModel.findByIdAndUpdate(api, { balance: updatedBalance });
-
-          const index = transactionArr.findIndex((ele) => {
-            ele.orderid == orderID;
-          });
 
           const newTransactionArr = transactionArr.map((ele) => {
             if (ele.orderid === orderID) {
               ele.success = true;
               return true;
             } else return ele;
+          });
+
+          await VendorModel.findByIdAndUpdate(api, {
+            balance: updatedBalance,
+            transactions: newTransactionArr,
           });
 
           res.send({ status: "success", claimCupon: coupon });
@@ -258,7 +259,7 @@ app.get("/withdrawAmountTo/:zkAddress/:api", async (req, res) => {
 
       if (Number(cloudBalance) > Number(zkPaybalance) + 100000000) {
         sendMoneyToZKAddr(zkaddr, zkPaybalance);
-        await VendorModel.findByIdAndUpdate(api, { balance: 0 });
+        await VendorModel.findByIdAndUpdate(apiKey, { balance: 0 });
         res.send({
           message:
             "success, wait for a while and check your bob account in bob ui",
