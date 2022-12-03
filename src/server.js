@@ -27,7 +27,7 @@ app.listen(PORT, () => {
 
 const VendorSchema = new mongoose.Schema({
   _id: String,
-  balance: mongoose.Decimal128,
+  balance: Number,
   transactions: [
     {
       orderid: String,
@@ -102,19 +102,29 @@ app.get("/getPaymentStatus/:orderID/:api", async (req, res) => {
       if (cloudTrxData !== undefined) {
         if (
           Number(cloudTrxData.amount) >
-            number(currentTransaction.amount) - 5000 ||
-          Number(cloudTrxData.amount) < number(currentTransaction.amount) + 5000
+            Number(currentTransactioninZKserver.amount) - 5000 ||
+          Number(cloudTrxData.amount) <
+            Number(currentTransactioninZKserver.amount) + 5000
         ) {
+          const updatedBalance =
+            Number(vendorData.balance) +
+            Number(currentTransactioninZKserver.amount);
+
+          console.log(updatedBalance);
+          await VendorModel.findByIdAndUpdate(api, { balance: updatedBalance });
           res.send({ status: "success" });
         } else {
-          res.send({ status: "success" });
+          console.log(
+            cloudTrxData.amount + " " + currentTransactioninZKserver.amount
+          );
+          res.send({ status: "sufccess" });
 
           //refund amount with 0,5 bob penelty
           //remove order id from vender data
           // return failure
         }
       } else {
-        res.send({ status: "InProcess", claimCoupon: cloudTrxData.txHash });
+        res.send({ status: "InProcess", claimCoupon: coupon });
       }
     });
   });
@@ -156,6 +166,7 @@ app.get("/getAddressToPay/:amount/:orderID/:api", async (req, res) => {
 
       const latestAddress = jsonResponse.address;
       const amount = req.params.amount;
+      console.log(amount);
       const orderID = req.params.orderID;
       const api = req.params.api;
 
@@ -163,7 +174,7 @@ app.get("/getAddressToPay/:amount/:orderID/:api", async (req, res) => {
 
       const transactionData = {
         orderid: orderID,
-        Amount: amount,
+        amount: amount,
         zkAddress: latestAddress,
         timestamp: new Date(),
         success: false,
@@ -171,7 +182,9 @@ app.get("/getAddressToPay/:amount/:orderID/:api", async (req, res) => {
 
       var isOrderIdPresent = false;
 
-      const transactionArr = vendorData.transactions;
+      const transactionArr = vendorData.transactions
+        ? vendorData.transactions
+        : undefined;
 
       transactionArr.forEach((trx) => {
         if (trx.orderid == orderID && !isOrderIdPresent) {
@@ -236,9 +249,10 @@ app.get("/withdrawAmountTo/:zkAddress/:api", async (req, res) => {
       const body = Buffer.concat(chunks);
       const json = JSON.parse(body.toString());
       const cloudBalance = Number(json.balance);
+      const zkaddr = req.params.zkAddress;
 
       if (Number(cloudBalance) > Number(zkPaybalance) + 100000000) {
-        sendMoneyToZKAddr(cloudBalance);
+        sendMoneyToZKAddr(zkaddr, cloudBalance);
         res.send({
           message:
             "success, wait for a while and check your bob account in bob ui",
@@ -246,8 +260,6 @@ app.get("/withdrawAmountTo/:zkAddress/:api", async (req, res) => {
       } else {
         res.send({ meessage: "failure" });
       }
-
-      res.send({ balance: json.balance });
     });
   });
 
@@ -307,3 +319,5 @@ const sendMoneyToZKAddr = (zkAddr, amount) => {
   req.write(writeVal);
   req.end();
 };
+
+//af92e721-6e10-4e8e-81c6-fcf7e19dd9a6
