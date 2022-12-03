@@ -119,10 +119,10 @@ app.get("/getPaymentStatus/:orderID/:api", async (req, res) => {
           const newTransactionArr = transactionArr.map((ele) => {
             if (ele.orderid === orderID) {
               ele.success = true;
-              return true;
+              return ele;
             } else return ele;
           });
-
+          console.log(newTransactionArr);
           await VendorModel.findByIdAndUpdate(api, {
             balance: updatedBalance,
             transactions: newTransactionArr,
