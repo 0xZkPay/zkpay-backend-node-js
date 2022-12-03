@@ -20,7 +20,7 @@ connection.once("open", () => {
   console.log("DB connected.");
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 9081;
 app.listen(PORT, () => {
   console.log(`Successfully served on port: ${PORT}.`);
 });
