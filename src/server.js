@@ -216,7 +216,7 @@ app.get("/getAddressToPay/:amount/:orderID/:api", async (req, res) => {
 
       const responseJson = { address: latestAddress, orderId: orderID };
 
-      res.send(responseJson);
+      res.send(transactionData);
 
       console.log(body.toString());
     });
