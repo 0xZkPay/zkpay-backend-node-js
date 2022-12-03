@@ -86,11 +86,11 @@ app.get("/getPaymentStatus/:orderID/:api", async (req, res) => {
 
       const transactionArr = vendorData.transactions;
 
-      const currentTransactioninZKserver = transactionArr.find(
+      const currentTransactioninZKPayserver = transactionArr.find(
         (ele) => ele.orderid == orderID
       );
 
-      const currentZkAddr = currentTransactioninZKserver.zkAddress;
+      const currentZkAddr = currentTransactioninZKPayserver.zkAddress;
       const cloudTrxData = trxHistory.find((ele) => {
         if (ele.to == currentZkAddr) {
           console.log(currentZkAddr);
@@ -100,28 +100,33 @@ app.get("/getPaymentStatus/:orderID/:api", async (req, res) => {
       const coupon = cloudTrxData !== undefined ? cloudTrxData.txHash : "na";
       console.log(cloudTrxData);
       if (cloudTrxData !== undefined) {
-        if (
+        if (currentTransactioninZKPayserver.success) {
+          res.send({ status: "success", claimCupon: coupon });
+        } else if (
           Number(cloudTrxData.amount) >
-            Number(currentTransactioninZKserver.amount) - 5000 ||
+            Number(currentTransactioninZKPayserver.amount) - 5000 ||
           Number(cloudTrxData.amount) <
-            Number(currentTransactioninZKserver.amount) + 5000
+            Number(currentTransactioninZKPayserver.amount) + 5000
         ) {
           const updatedBalance =
             Number(vendorData.balance) +
-            Number(currentTransactioninZKserver.amount);
+            Number(currentTransactioninZKPayserver.amount);
 
           console.log(updatedBalance);
           await VendorModel.findByIdAndUpdate(api, { balance: updatedBalance });
-          res.send({ status: "success" });
-        } else {
-          console.log(
-            cloudTrxData.amount + " " + currentTransactioninZKserver.amount
-          );
-          res.send({ status: "sufccess" });
 
-          //refund amount with 0,5 bob penelty
-          //remove order id from vender data
-          // return failure
+          const index = transactionArr.findIndex((ele) => {
+            ele.orderid == orderID;
+          });
+
+          const newTransactionArr = transactionArr.map((ele) => {
+            if (ele.orderid === orderID) {
+              ele.success = true;
+              return true;
+            } else return ele;
+          });
+
+          res.send({ status: "success", claimCupon: coupon });
         }
       } else {
         res.send({ status: "InProcess", claimCoupon: coupon });
@@ -245,14 +250,15 @@ app.get("/withdrawAmountTo/:zkAddress/:api", async (req, res) => {
       chunks.push(chunk);
     });
 
-    zkRes.on("end", function () {
+    zkRes.on("end", async () => {
       const body = Buffer.concat(chunks);
       const json = JSON.parse(body.toString());
       const cloudBalance = Number(json.balance);
       const zkaddr = req.params.zkAddress;
 
       if (Number(cloudBalance) > Number(zkPaybalance) + 100000000) {
-        sendMoneyToZKAddr(zkaddr, cloudBalance);
+        sendMoneyToZKAddr(zkaddr, zkPaybalance);
+        await VendorModel.findByIdAndUpdate(api, { balance: 0 });
         res.send({
           message:
             "success, wait for a while and check your bob account in bob ui",
@@ -267,12 +273,6 @@ app.get("/withdrawAmountTo/:zkAddress/:api", async (req, res) => {
 
   //make vendor balance zero
   //send that amount to the givenn zk address
-});
-
-app.get("/ClaimNFt/:txHash/:NFTclaimAddress", (req, res) => {
-  res.send(req.params);
-  console.log(req.params);
-  //claim nft call using sachindra api
 });
 
 app.get("/getDashboardData/:api", async (req, res) => {
@@ -321,3 +321,5 @@ const sendMoneyToZKAddr = (zkAddr, amount) => {
 };
 
 //af92e721-6e10-4e8e-81c6-fcf7e19dd9a6
+
+//70f6b19c-0b01-4415-bf59-d09d6e9f6091
