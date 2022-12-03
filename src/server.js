@@ -193,8 +193,10 @@ app.get("/getAddressToPay/:amount/:orderID/:api", async (req, res) => {
         ? vendorData.transactions
         : undefined;
 
+      console.log(orderID + "ASFSDAFAFSDDSF");
+
       transactionArr.forEach((trx) => {
-        if (trx.orderid == orderID && !isOrderIdPresent) {
+        if (Number(trx.orderid) == Number(orderID) && !isOrderIdPresent) {
           isOrderIdPresent = true;
         }
       });
@@ -205,6 +207,7 @@ app.get("/getAddressToPay/:amount/:orderID/:api", async (req, res) => {
             return ele.orderid == orderID;
           })
         );
+        return;
       } else {
         vendorData.transactions.push(transactionData);
       }
@@ -213,7 +216,7 @@ app.get("/getAddressToPay/:amount/:orderID/:api", async (req, res) => {
 
       const responseJson = { address: latestAddress, orderId: orderID };
 
-      res.send(transactionData);
+      res.send(responseJson);
 
       console.log(body.toString());
     });
@@ -322,6 +325,4 @@ const sendMoneyToZKAddr = (zkAddr, amount) => {
   req.end();
 };
 
-//af92e721-6e10-4e8e-81c6-fcf7e19dd9a6
-
-//70f6b19c-0b01-4415-bf59-d09d6e9f6091
+//88fc1a76-0ccf-467e-985a-39a2435250d1
