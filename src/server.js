@@ -31,7 +31,7 @@ const VendorSchema = new mongoose.Schema({
   transactions: [
     {
       orderid: String,
-      amount: mongoose.Decimal128,
+      amount: Number,
       zkAddress: String,
       timestamp: Date,
       success: Boolean,
@@ -46,7 +46,6 @@ app.get("/getKey", async (req, res) => {
   const key = uuid.v4();
   const vendor = await VendorModel.create({
     _id: key.toString(),
-    apiKey: key.toString(),
     balance: 0,
     timestamp: new Date(),
   });
