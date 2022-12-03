@@ -1,8 +1,9 @@
 const http = require("https");
 require("dotenv").config();
+var cors = require("cors");
 const express = require("express");
 const app = express();
-
+app.use(cors());
 const uuid = require("uuid");
 
 app.use(express.json());
